@@ -1,0 +1,67 @@
+# Deploy systemd services for YugabyteDB
+
+- name: Set master addresses
+  set_fact:
+    master_addresses: >-
+      {{
+        groups['yb_master']
+        | map('extract', hostvars, 'hostname')
+        | map('regex_replace', '^(.*)$', '\1:7100')
+        | join(',')
+      }}
+
+- name: Create start script for yb-master
+  copy:
+    dest: "{{ yb_root }}/start-master.sh"
+    mode: '0755'
+    owner: "{{ yb_user }}"
+    group: "{{ yb_group }}"
+    content: |
+      #!/bin/bash
+      exec /opt/yugabyte/latest/bin/yb-master \
+        --master_addresses={{ master_addresses }} \
+        --rpc_bind_addresses=0.0.0.0:7100 \
+        --fs_data_dirs=/opt/yugabyte/data/yb-master \
+        --log_dir=/opt/yugabyte/data/logs \
+        --webserver_interface=0.0.0.0 \
+        --webserver_port=7000 \
+        --replication_factor=3
+
+- name: Deploy systemd service for yb-master
+  copy:
+    dest: /etc/systemd/system/yb-master.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=YugabyteDB Master
+      After=network.target
+
+      [Service]
+      User={{ yb_user }}
+      Group={{ yb_group }}
+      ExecStart={{ yb_root }}/start-master.sh
+      Restart=always
+      LimitNOFILE=1048576
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start yb-master
+  systemd:
+    name: yb-master
+    enabled: yes
+    state: started
+
+- name: Open yb-master port
+  firewalld:
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: yes
+  loop:
+    - 7000/tcp   # yb-master web ports
+    - 7100/tcp   # yb-mastereb ports

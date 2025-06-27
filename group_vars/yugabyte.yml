@@ -1,0 +1,13 @@
+yb_net:
+  device: enp0s3
+  gateway: 10.0.2.1
+host_net:
+  device: enp0s8
+
+yb_root: /opt/yugabyte
+yb_data_root: "{{ yb_root }}/data"
+yb_log_dir: "{{ yb_data_root }}/logs"
+yb_user: yugabyte
+yb_group: yugabyte
+yb_version: yugabyte-2024.2.3.2-b6
+yb_tarball: yugabyte-2024.2.3.2-b6-linux-x86_64.tar.gz

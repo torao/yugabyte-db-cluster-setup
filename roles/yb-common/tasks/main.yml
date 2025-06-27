@@ -1,0 +1,115 @@
+- name: Ensure required packages are installed
+  package:
+    name:
+      - wget
+      - tar
+    state: present
+
+# Create Yugabyte User and Group
+
+- name: Ensure yugabyte group exists
+  group:
+    name: "{{ yb_group }}"
+    gid: 1200
+    state: present
+
+- name: Ensure yugabyte user exists
+  user:
+    name: "{{ yb_user }}"
+    uid: 1200
+    group: "{{ yb_group }}"
+    home: /home/"{{ yb_user }}"
+    create_home: yes
+    shell: /bin/bash
+    state: present
+
+# Hostname
+
+- name: Add Yugabyte hostnames to /etc/hosts
+  become: true
+  blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} YUGABYTE HOSTS"
+    block: |
+      {% for group in ['yb_master', 'yb_tserver'] %}
+        {% for host in groups[group] %}
+          {{ hostvars[host].yb_net_address }} {{ hostvars[host].hostname }}
+        {% endfor %}
+      {% endfor %}
+
+# Install YugabyteDB
+
+- name: Create yugabyte directory
+  file:
+    path: "{{ yb_root }}"
+    state: directory
+    owner: yugabyte
+    group: yugabyte
+    mode: '0755'
+
+- name: Check if Yugabyte is already installed
+  stat:
+    path: "{{ yb_root }}/{{ yb_version }}"
+  register: yugabyte_dir_stat
+
+- name: Copy YugabyteDB tarball from host
+  become_user: yugabyte
+  copy:
+    src: "{{ yb_tarball }}"
+    dest: "{{ yb_root }}/"
+    mode: '0644'
+  when: not yugabyte_dir_stat.stat.exists
+
+- name: Create target directory
+  file:
+    path: "{{ yb_root }}/{{ yb_version }}"
+    state: directory
+    owner: yugabyte
+    group: yugabyte
+    mode: '0755'
+
+- name: Extract tarball into target dir with stripped top-level
+  become_user: yugabyte
+  command: >
+    tar --strip-components=1 -xzf {{ yb_root }}/{{ yb_tarball | basename }} -C {{ yb_root }}/{{ yb_version }}
+  args:
+    creates: "{{ yb_root }}/{{ yb_version }}/bin/yugabyted"
+  when: not yugabyte_dir_stat.stat.exists
+
+- name: Run post_install.sh
+  become_user: yugabyte
+  command: "{{ yb_root }}/{{ yb_version }}/bin/post_install.sh"
+  args:
+    chdir: "{{ yb_root }}/{{ yb_version }}"
+  when: not yugabyte_dir_stat.stat.exists
+
+- name: Ensure correct ownership of Yugabyte installation
+  file:
+    path: "{{ yb_root }}/{{ yb_version }}"
+    owner: yugabyte
+    group: yugabyte
+    recurse: yes
+  when: not yugabyte_dir_stat.stat.exists
+
+- name: Remove tarball after extraction
+  file:
+    path: "{{ yb_root }}/{{ yb_tarball | basename }}"
+    state: absent
+
+- name: Symlink to yugabyte
+  file:
+    src: "{{ yb_root }}/{{ yb_version }}"
+    dest: "{{ yb_root }}/latest"
+    state: link
+    owner: yugabyte
+    group: yugabyte
+    force: yes
+
+# Create data and log directories
+
+- name: Ensure log directory exists
+  become_user: yugabyte
+  file:
+    path: "{{ yb_log_dir }}"
+    state: directory
+    mode: '0755'

@@ -1,0 +1,7 @@
+- name: Configure passwordless sudo for user
+  copy:
+    dest: "/etc/sudoers.d/{{ ansible_user }}"
+    content: "{{ ansible_user }} ALL=(ALL) NOPASSWD: ALL"
+    owner: root
+    group: root
+    mode: '0440'

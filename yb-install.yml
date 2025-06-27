@@ -1,0 +1,13 @@
+- name: Install Yugabyte Master Server
+  hosts: yb_master
+  become: true
+  roles:
+    - yb-common
+    - yb-master
+
+- name: Install Yugabyte TServer
+  hosts: yb_tserver
+  become: true
+  roles:
+    - yb-common
+    - yb-tserver

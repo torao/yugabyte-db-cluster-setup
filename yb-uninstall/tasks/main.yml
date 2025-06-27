@@ -1,0 +1,86 @@
+- name: Remove YugabyteDB ports from firewall
+  firewalld:
+    port: "{{ item }}"
+    permanent: true
+    state: disabled
+    immediate: yes
+  loop:
+    - 7000-7100/tcp   # yb-master 関連
+    - 9000-9100/tcp   # yb-tserver 関連
+    - 5433/tcp        # YSQL
+    - 9042/tcp        # YCQL
+
+- name: Check if yb-tserver systemd unit file exists
+  stat:
+    path: /etc/systemd/system/yb-tserver.service
+  register: yb_tserver_service_file
+
+- name: Stop and disable yb-tserver
+  systemd:
+    name: yb-tserver
+    enabled: no
+    state: stopped
+  when: yb_tserver_service_file.stat.exists
+
+- name: Check if yb-master systemd unit file exists
+  stat:
+    path: /etc/systemd/system/yb-master.service
+  register: yb_master_service_file
+
+- name: Stop and disable yb-master
+  systemd:
+    name: yb-master
+    enabled: no
+    state: stopped
+  when: yb_master_service_file.stat.exists
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Remove systemd unit file for yb-tserver
+  file:
+    path: /etc/systemd/system/yb-tserver.service
+    state: absent
+  when: "'yb_tserver' in group_names"
+
+- name: Remove systemd unit file for yb-master
+  file:
+    path: /etc/systemd/system/yb-master.service
+    state: absent
+  when: "'yb_master' in group_names"
+
+- name: Remove start-tserver.sh script
+  file:
+    path: "{{ yb_root }}/start-tserver.sh"
+    state: absent
+  when: "'yb_tserver' in group_names"
+  
+- name: Remove start-master.sh script
+  file:
+    path: "{{ yb_root }}/start-master.sh"
+    state: absent
+  when: "'yb_master' in group_names"
+  
+- name: Remove yugabyte directory
+  file:
+    path: "{{ yb_root }}"
+    state: absent
+
+- name: Remove Yugabyte hostnames from /etc/hosts
+  become: true
+  blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} YUGABYTE HOSTS"
+    state: absent
+
+- name: Remove yugabyte user
+  user:
+    name: "{{ yb_user }}"
+    state: absent
+    remove: yes
+
+- name: Remove yugabyte group
+  group:
+    name: "{{ yb_group }}"
+    state: absent

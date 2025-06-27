@@ -1,0 +1,34 @@
+all:
+  children:
+    yugabyte:
+      children:
+        yb_master:
+          hosts:
+            "192.168.56.200":
+              hostname: yb-master1
+              host_net_address: 192.168.56.200
+              yb_net_address: 10.0.2.200
+            "192.168.56.201":
+              hostname: yb-master2
+              host_net_address: 192.168.56.201
+              yb_net_address: 10.0.2.201
+            "192.168.56.202":
+              hostname: yb-master3
+              host_net_address: 192.168.56.202
+              yb_net_address: 10.0.2.202
+        yb_tserver:
+          hosts:
+            "192.168.56.205":
+              hostname: yb-tserver1
+              host_net_address: 192.168.56.205
+              yb_net_address: 10.0.2.205
+            "192.168.56.206":
+              hostname: yb-tserver2
+              host_net_address: 192.168.56.206
+              yb_net_address: 10.0.2.206
+            "192.168.56.207":
+              hostname: yb-tserver3
+              host_net_address: 192.168.56.207
+              yb_net_address: 10.0.2.207
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'

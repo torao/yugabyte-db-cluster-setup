@@ -1,0 +1,5 @@
+- name: Uninstall YugabyteDB on all nodes
+  hosts: all
+  become: true
+  roles:
+    - yb-uninstall

@@ -1,0 +1,7 @@
+- name: Initial setup for all nodes
+  hosts: all
+  become: true
+
+  roles:
+    - netconfig
+    - sudoers

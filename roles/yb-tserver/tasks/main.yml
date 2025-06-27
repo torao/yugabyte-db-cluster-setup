@@ -1,0 +1,71 @@
+# Deploy systemd services for YugabyteDB
+
+- name: Set master addresses
+  set_fact:
+    master_addresses: >-
+      {{
+        groups['yb_master']
+        | map('extract', hostvars, 'hostname')
+        | map('regex_replace', '^(.*)$', '\1:7100')
+        | join(',')
+      }}
+
+- name: Create start script for yb-tserver
+  copy:
+    dest: "{{ yb_root }}/start-tserver.sh"
+    mode: '0755'
+    owner: "{{ yb_user }}"
+    group: "{{ yb_group }}"
+    content: |
+      #!/bin/bash
+      exec {{ yb_root }}/latest/bin/yb-tserver \
+        --tserver_master_addrs={{ master_addresses }} \
+        --rpc_bind_addresses=0.0.0.0:9100 \
+        --enable_ysql \
+        --pgsql_proxy_bind_address=0.0.0.0:5433 \
+        --cql_proxy_bind_address=0.0.0.0:9042 \
+        --fs_data_dirs={{ yb_data_root }}/yb-tserver \
+        --log_dir={{ yb_log_dir }} \
+        --webserver_interface=0.0.0.0 \
+        --webserver_port=9000 
+
+- name: Deploy systemd service for yb-tserver
+  copy:
+    dest: /etc/systemd/system/yb-tserver.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=YugabyteDB TServer
+      After=network.target
+
+      [Service]
+      User={{ yb_user }}
+      Group={{ yb_group }}
+      ExecStart={{ yb_root }}/start-tserver.sh
+      Restart=always
+      LimitNOFILE=1048576
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start yb-tserver
+  systemd:
+    name: yb-tserver
+    enabled: yes
+    state: started
+
+- name: Open yb-tserver port
+  firewalld:
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: yes
+  loop:
+    - 9000/tcp   # yb-tserver web ports
+    - 9100/tcp   # yb-tserver ports
+    - 5433/tcp   # YSQL
+    - 9042/tcp   # YCQL

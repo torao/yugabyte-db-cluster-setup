@@ -1,0 +1,30 @@
+- name: Set hostname
+  hostname:
+    name: "{{ hostname }}"
+
+- name: Configure static IP address for host-only network
+  nmcli:
+    conn_name: "{{ host_net.device }}"
+    ifname: "{{ host_net.device }}"
+    type: ethernet
+    ip4: "{{ host_net_address }}/24"
+    gw4: "{{ yb_net.gateway }}"
+    state: present
+  register: ipconfig_result
+
+- name: Configure static IP address for yugabyte network
+  nmcli:
+    conn_name: "{{ yb_net.device }}"
+    ifname: "{{ yb_net.device }}"
+    type: ethernet
+    ip4: "{{ yb_net_address }}/24"
+    gw4: "{{ yb_net.gateway }}"
+    state: present
+  register: ipconfig_result
+
+- name: Restart NetworkManager
+  systemd:
+    name: NetworkManager
+    state: restarted
+    enabled: true
+  when: ipconfig_result.changed
