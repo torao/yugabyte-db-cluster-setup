@@ -3,7 +3,23 @@
     name:
       - wget
       - tar
+      - glibc-langpack-en
     state: present
+
+# Language configuration
+
+- name: Generate en_US.UTF-8 locale
+  become: true
+  command: localedef -i en_US -f UTF-8 en_US.UTF-8
+  args:
+    creates: /usr/lib/locale/en_US.utf8
+
+- name: Ensure system default locale is en_US.UTF-8
+  become: true
+  lineinfile:
+    path: /etc/locale.conf
+    regexp: '^LANG='
+    line: 'LANG=en_US.UTF-8'
 
 # Create Yugabyte User and Group
 
