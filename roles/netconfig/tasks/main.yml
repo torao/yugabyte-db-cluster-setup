@@ -8,7 +8,7 @@
     ifname: "{{ host_net.device }}"
     type: ethernet
     ip4: "{{ host_net_address }}/24"
-    gw4: "{{ yb_net.gateway }}"
+    gw4: ""
     state: present
   register: ipconfig_result
 
