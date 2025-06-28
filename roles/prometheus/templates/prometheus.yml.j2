@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'yb-masters'
+    metrics_path: /prometheus-metrics
+    static_configs:
+      - targets:
+        {% for host in groups['yb_master'] %}
+          - '{{ hostvars[host]["host_net_address"] }}:7000'
+        {% endfor %}
+
+  - job_name: 'yb-tservers'
+    metrics_path: /prometheus-metrics
+    static_configs:
+      - targets:
+        {% for host in groups['yb_tserver'] %}
+          - '{{ hostvars[host]["host_net_address"] }}:9000'
+        {% endfor %}

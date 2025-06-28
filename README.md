@@ -45,12 +45,17 @@ ansible -i inventory.yml all -m ping -u yb-deploy -k
 # YugabyteDB をダウンロードして各ノードにインストールを実行します。
 wget https://software.yugabyte.com/releases/2024.2.3.2/yugabyte-2024.2.3.2-b6-linux-x86_64.tar.gz
 ansible-playbook -i inventory.yml yb-install.yml -u yb-deploy -k -e yb_tarball=yugabyte-2024.2.3.2-b6-linux-x86_64.tar.gz -e yb_version=yugabyte-2024.2.3.2-b6
+
+# 監視系 (Prometheus + Grafana) のインストールを実行します。
+ansible-playbook -i inventory.yml monitoring.yml -u yb-deploy -k
 ```
 
 クラスタが正しく起動すれば、host_net の IP アドレスを使って構成ノードから各ノードと通信できます。
 
 - http://192.168.56.xxx:7000/ (YB Master)
 - http://192.168.56.yyy:9000/ (YB TServer)
+- http://192.168.56.210:9090/ (Prometheus)
+- http://192.168.56.210:3000/ (Grafana; id/pass = admin/admin)
 
 ## ネットワーク構成
 

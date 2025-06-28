@@ -1,0 +1,65 @@
+---
+- name: Create prometheus user
+  user:
+    name: prometheus
+    shell: /bin/false
+    create_home: no
+
+- name: Create prometheus directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: prometheus
+    group: prometheus
+  loop:
+    - /etc/prometheus
+    - /var/lib/prometheus
+
+- name: Install tar
+  dnf:
+    name: tar
+    state: present
+
+- name: Download and unarchive prometheus
+  unarchive:
+    src: https://github.com/prometheus/prometheus/releases/download/v3.4.2/prometheus-3.4.2.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+
+- name: Copy prometheus binaries
+  copy:
+    src: "/tmp/prometheus-3.4.2.linux-amd64/{{ item }}"
+    dest: /usr/local/bin/
+    owner: root
+    group: root
+    mode: 0755
+    remote_src: yes
+  loop:
+    - prometheus
+    - promtool
+
+- name: Copy prometheus config
+  template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    owner: prometheus
+    group: prometheus
+
+- name: Create systemd service file
+  template:
+    src: prometheus.service.j2
+    dest: /etc/systemd/system/prometheus.service
+
+- name: Start and enable prometheus service
+  systemd:
+    name: prometheus
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Allow prometheus port
+  firewalld:
+    port: 9090/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes

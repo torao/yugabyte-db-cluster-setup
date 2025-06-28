@@ -30,5 +30,11 @@ all:
               hostname: yb-tserver3
               host_net_address: 192.168.56.207
               yb_net_address: 10.0.2.207
+        monitoring:
+          hosts:
+            "192.168.56.210":
+              hostname: yb-monitoring
+              host_net_address: 192.168.56.210
+              yb_net_address: 10.0.2.210
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'

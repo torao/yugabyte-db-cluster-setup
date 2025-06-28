@@ -1,0 +1,71 @@
+---
+
+# By default, the user `grafana` is restricted by SELinux and cannot connect to 9090 (websm_port).
+- name: Replace old websm_port_t label to http_port_t for tcp/9090
+  shell: |
+    semanage port -m -t http_port_t -p tcp 9090
+
+- name: Install grafana
+  dnf:
+    name: grafana
+    state: present
+
+- name: Create grafana datasources config directory
+  file:
+    path: /etc/grafana/provisioning/datasources
+    state: directory
+
+- name: Create grafana datasource config
+  copy:
+    dest: /etc/grafana/provisioning/datasources/datasource.yml
+    owner: root
+    group: grafana
+    mode: '0640'
+    content: |
+      apiVersion: 1
+
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://localhost:9090
+          isDefault: true
+
+- name: Create grafana dashboards config directory
+  file:
+    path: /etc/grafana/provisioning/dashboards
+    state: directory
+
+- name: Create grafana dashboard provider config
+  template:
+    src: dashboard-provider.yml.j2
+    dest: /etc/grafana/provisioning/dashboards/dashboard-provider.yml
+
+- name: Create grafana dashboards directory
+  file:
+    path: /var/lib/grafana/dashboards
+    state: directory
+
+- name: Download yugabytedb dashboard
+  get_url:
+    url: "https://raw.githubusercontent.com/yugabyte/yugabyte-db/master/cloud/grafana/YugabyteDB.json"
+    dest: "/var/lib/grafana/dashboards/YugabyteDB.json"
+
+- name: Set default timezone
+  lineinfile:
+    path: /etc/grafana/grafana.ini
+    regexp: ';default_timezone = UTC'
+    line: 'default_timezone = Asia/Tokyo'
+
+- name: Start and enable grafana-server
+  systemd:
+    name: grafana-server
+    state: started
+    enabled: yes
+
+- name: Allow grafana port
+  firewalld:
+    port: 3000/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
