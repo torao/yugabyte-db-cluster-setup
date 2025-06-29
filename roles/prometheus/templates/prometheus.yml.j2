@@ -1,19 +1,81 @@
 global:
-  scrape_interval: 5s
+  scrape_interval:     5s # Set the scrape interval to every 5 seconds. Default is every 1 minute.
+  evaluation_interval: 5s # Evaluate rules every 5 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
 
+# YugabyteDB configuration to scrape Prometheus time series metrics
 scrape_configs:
-  - job_name: 'yb-masters'
+  - job_name: "yugabytedb"
     metrics_path: /prometheus-metrics
-    static_configs:
-      - targets:
-        {% for host in groups['yb_master'] %}
-          - '{{ hostvars[host]["host_net_address"] }}:7000'
-        {% endfor %}
+    relabel_configs:
+      - target_label: "node_prefix"
+        replacement: "cluster-1"
+    metric_relabel_configs:
+      # Save the name of the metric so we can group_by since we cannot by __name__ directly...
+      - source_labels: ["__name__"]
+        regex: "(.*)"
+        target_label: "saved_name"
+        replacement: "$1"
+      # The following basically retrofit the handler_latency_* metrics to label format.
+      - source_labels: ["__name__"]
+        regex: "handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(.*)"
+        target_label: "server_type"
+        replacement: "$1"
+      - source_labels: ["__name__"]
+        regex: "handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(.*)"
+        target_label: "service_type"
+        replacement: "$2"
+      - source_labels: ["__name__"]
+        regex: "handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count)?"
+        target_label: "service_method"
+        replacement: "$3"
+      - source_labels: ["__name__"]
+        regex: "handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count)?"
+        target_label: "__name__"
+        replacement: "rpc_latency$4"
 
-  - job_name: 'yb-tservers'
-    metrics_path: /prometheus-metrics
     static_configs:
-      - targets:
-        {% for host in groups['yb_tserver'] %}
-          - '{{ hostvars[host]["host_net_address"] }}:9000'
-        {% endfor %}
+      - targets: [{{ 
+          groups['yb_master']
+          | map('extract', hostvars, 'host_net_address')
+          | map('regex_replace', '^(.*)$', '"\\1:7000"')
+          | join(', ')
+        }}]
+        labels:
+          export_type: "master_export"
+
+      - targets: [{{ 
+          groups['yb_tserver']
+          | map('extract', hostvars, 'host_net_address')
+          | map('regex_replace', '^(.*)$', '"\\1:9000"')
+          | join(', ')
+        }}]
+        labels:
+          export_type: "tserver_export"
+
+      - targets: [{{ 
+          groups['yb_tserver']
+          | map('extract', hostvars, 'host_net_address')
+          | map('regex_replace', '^(.*)$', '"\\1:12000"')
+          | join(', ')
+        }}]
+        labels:
+          export_type: "cql_export"
+
+      - targets: [{{ 
+          groups['yb_tserver']
+          | map('extract', hostvars, 'host_net_address')
+          | map('regex_replace', '^(.*)$', '"\\1:13000"')
+          | join(', ')
+        }}]
+        labels:
+          export_type: "ysql_export"
+
+      - targets: [{{ 
+          groups['yb_tserver']
+          | map('extract', hostvars, 'host_net_address')
+          | map('regex_replace', '^(.*)$', '"\\1:11000"')
+          | join(', ')
+        }}]
+        labels:
+          export_type: "redis_export"

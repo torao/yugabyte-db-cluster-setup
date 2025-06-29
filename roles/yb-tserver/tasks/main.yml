@@ -69,3 +69,6 @@
     - 9100/tcp   # yb-tserver ports
     - 5433/tcp   # YSQL
     - 9042/tcp   # YCQL
+    - 11000/tcp  # Redis prometheus export
+    - 12000/tcp  # YCQL prometheus export
+    - 13000/tcp  # YSQL prometheus export
