@@ -77,6 +77,8 @@ ansible-playbook -i inventory.yml yb-install.yml -u yb-deploy -k -e yb_tarball=y
 
 ## SQL を実行する
 
+PostgreSQL クライアントを使用して YugabyteDB クラスタにアクセスします。
+
 ```shell
 sudo apt install postgresql-client
 psql -h 192.168.56.205 -p 5433 -U yugabyte -d yugabyte
@@ -91,11 +93,14 @@ DROP TABLE tbl_test
 \q
 ```
 
+メトリクスを見るために負荷をかける場合は `pgbench` を使用することができます。
+
 ```shell
 sudo apt install postgresql-contrib
 
 # 初期データの準備
 pgbench -h 192.168.56.205 -p 5433 -U yugabyte -i -s 10 -n postgres
 
+# ワークロードの実行
 pgbench -h 192.168.56.205 -p 5433 -U yugabyte -c 50 -T 120 postgres
 ```
