@@ -1,9 +1,15 @@
 ---
 
 # By default, the user `grafana` is restricted by SELinux and cannot connect to 9090 (websm_port).
-- name: Replace old websm_port_t label to http_port_t for tcp/9090
-  shell: |
-    semanage port -m -t http_port_t -p tcp 9090
+- name: Check if tcp/9090 is already labeled http_port_t
+  shell: semanage port -l | grep -q '^http_port_t.*tcp.*9090'
+  register: http_port_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Relabel tcp/9090 to http_port_t only if not already
+  shell: semanage port -m -t http_port_t -p tcp 9090
+  when: http_port_check.rc != 0
 
 - name: Install grafana
   dnf:

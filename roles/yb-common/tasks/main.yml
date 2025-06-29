@@ -7,6 +7,7 @@
     state: present
 
 # Language configuration
+# The TServer uses 'en_US.UTF-8' in initdb.
 
 - name: Generate en_US.UTF-8 locale
   become: true
