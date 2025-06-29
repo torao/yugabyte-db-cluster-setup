@@ -74,3 +74,28 @@ ansible-playbook -i inventory.yml yb-install.yml -u yb-deploy -k -e yb_tarball=y
 | yb-tserver1 | 192.168.56.205 | 10.0.2.205 |
 | yb-tserver2 | 192.168.56.206 | 10.0.2.206 |
 | yb-tserver3 | 192.168.56.207 | 10.0.2.207 |
+
+## SQL を実行する
+
+```shell
+sudo apt install postgresql-client
+psql -h 192.168.56.205 -p 5433 -U yugabyte -d yugabyte
+
+SELECT version();
+CREATE TABLE tbl_test(id SERIAL PRIMARY KEY, name TEXT, cnt INT);
+INSERT INTO tbl_test(name,cnt) VALUES('alice',1),('bob',2);
+SELECT * FROM tbl_test;
+UPDATE tbl_test SET cnt = cnt + 10 WHERE name = 'alice';
+SELECT * FROM tbl_test WHERE name = 'alice';
+DROP TABLE tbl_test
+\q
+```
+
+```shell
+sudo apt install postgresql-contrib
+
+# 初期データの準備
+pgbench -h 192.168.56.205 -p 5433 -U yugabyte -i -s 10 -n postgres
+
+pgbench -h 192.168.56.205 -p 5433 -U yugabyte -c 50 -T 120 postgres
+```
