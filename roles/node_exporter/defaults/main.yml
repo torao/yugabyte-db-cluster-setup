@@ -1,0 +1,8 @@
+---
+node_exporter_version: "1.9.1"
+node_exporter_base_url: "https://github.com/prometheus/node_exporter/releases/download"
+node_exporter_archive: "node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+node_exporter_install_dir: "/opt/node_exporter"
+
+# デフォルトの 9100 ポートは yb-tserver の RPC が使用しているため、YB Anyware の構成に合わせて node_exporter は 9300 で起動
+node_exporter_listen_port: 9300

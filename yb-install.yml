@@ -2,6 +2,7 @@
   hosts: yb_master
   become: true
   roles:
+    - node_exporter
     - yb-common
     - yb-master
 
@@ -9,6 +10,7 @@
   hosts: yb_tserver
   become: true
   roles:
+    - node_exporter
     - yb-common
     - yb-tserver
 

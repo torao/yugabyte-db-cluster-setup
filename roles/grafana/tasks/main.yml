@@ -57,6 +57,11 @@
     url: "https://raw.githubusercontent.com/yugabyte/yugabyte-db/master/cloud/grafana/YugabyteDB.json"
     dest: "/var/lib/grafana/dashboards/YugabyteDB.json"
 
+- name: Download Node Exporter Full dashboard
+  get_url:
+    url: "https://grafana.com/api/dashboards/1860/revisions/latest/download"
+    dest: "/var/lib/grafana/dashboards/node_exporter_full.json"
+
 - name: Set default timezone
   lineinfile:
     path: /etc/grafana/grafana.ini

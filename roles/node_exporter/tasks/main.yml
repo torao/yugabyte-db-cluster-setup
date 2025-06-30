@@ -1,0 +1,82 @@
+# Configure node_exporter
+
+- name: Create node_exporter group
+  group:
+    name: node_exporter
+    system: true
+    state: present
+
+- name: Create node_exporter user
+  user:
+    name: node_exporter
+    group: node_exporter
+    shell: /sbin/nologin
+    system: true
+    create_home: false
+    state: present
+
+- name: Check if node_exporter service file exists
+  stat:
+    path: /etc/systemd/system/node_exporter.service
+  register: node_exporter_service_stat
+
+- name: Install node_exporter
+  when: not node_exporter_service_stat.stat.exists
+  block:
+
+  - name: Download Node Exporter archive
+    get_url:
+      url: "{{ node_exporter_base_url }}/v{{ node_exporter_version }}/{{ node_exporter_archive }}"
+      dest: "/tmp/{{ node_exporter_archive }}"
+      mode: '0644'
+
+  - name: Ensure Node Exporter install directory exists
+    file:
+      path: "{{ node_exporter_install_dir }}"
+      state: directory
+      owner: node_exporter
+      group: node_exporter
+      mode: '0755'
+
+  - name: Extract Node Exporter archive
+    become_user: node_exporter
+    unarchive:
+      src: "/tmp/{{ node_exporter_archive }}"
+      dest: "{{ node_exporter_install_dir }}"
+      remote_src: true
+      extra_opts: [--strip-components=1]
+
+- name: Configure node_exporter.service
+  copy:
+    dest: /etc/systemd/system/node_exporter.service
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Node Exporter
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      User=node_exporter
+      Group=node_exporter
+      Type=simple
+      ExecStart={{ node_exporter_install_dir }}/node_exporter \
+          --web.listen-address=":{{ node_exporter_listen_port }}"
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Ensure node_exporter service is enabled and running
+  systemd:
+    name: node_exporter
+    state: started
+    enabled: true
+
+- name: Allow Node Exporter port through firewall
+  firewalld:
+    port: "{{ node_exporter_listen_port }}/tcp"
+    permanent: true
+    state: enabled
+    immediate: yes
