@@ -88,3 +88,12 @@ scrape_configs:
           | map('regex_replace', '^(.*)$', '"\\1:9300"')
           | join(', ')
         }}]
+
+  - job_name: 'node'
+    static_configs:
+      - targets: [{{ 
+          (groups['yb_master'] + groups['yb_tserver'])
+          | map('extract', hostvars, 'host_net_address')
+          | map('regex_replace', '^(.*)$', '"\\1:9300"')
+          | join(', ')
+        }}]

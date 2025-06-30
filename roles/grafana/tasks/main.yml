@@ -52,15 +52,25 @@
     path: /var/lib/grafana/dashboards
     state: directory
 
-- name: Download yugabytedb dashboard
-  get_url:
-    url: "https://raw.githubusercontent.com/yugabyte/yugabyte-db/master/cloud/grafana/YugabyteDB.json"
-    dest: "/var/lib/grafana/dashboards/YugabyteDB.json"
-
 - name: Download Node Exporter Full dashboard
   get_url:
     url: "https://grafana.com/api/dashboards/1860/revisions/latest/download"
     dest: "/var/lib/grafana/dashboards/node_exporter_full.json"
+
+- name: Download Node Exporter Quickstart and Dashboard
+  get_url:
+    url: "https://grafana.com/api/dashboards/13978/revisions/2/download"
+    dest: "/var/lib/grafana/dashboards/node_exporter_quick_and_dashboard.json"
+
+- name: Download Node Exporter Quick Overview
+  get_url:
+    url: "https://grafana.com/api/dashboards/11530/revisions/2/download"
+    dest: "/var/lib/grafana/dashboards/node_exporter_quick_overview.json"
+
+- name: Download yugabytedb dashboard
+  get_url:
+    url: "https://raw.githubusercontent.com/yugabyte/yugabyte-db/master/cloud/grafana/YugabyteDB.json"
+    dest: "/var/lib/grafana/dashboards/YugabyteDB.json"
 
 - name: Set default timezone
   lineinfile:
